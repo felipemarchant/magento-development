@@ -1,0 +1,63 @@
+version: "3.7"
+services:
+  server:
+    container_name: m_app
+    image: nginx:1.19.2-alpine
+    tty: true
+    volumes: 
+      - ./nginx/confs/default.conf:/etc/nginx/conf.d/default.conf
+      #- ./app/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/logs:/var/log/nginx/
+      - ./app:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - m_net
+    ports: 
+      - 80:80
+    depends_on: 
+      - php
+      - db
+  php:
+    container_name: m_php
+    build: ./php
+    tty: true
+    volumes: 
+      - ./app:/var/www/html
+      - ./php/php.ini:/usr/local/etc/php/php.ini
+    networks:
+      - m_net
+  db:
+    image: mysql:8.0.21
+    command: --default-authentication-plugin=mysql_native_password
+    container_name: m_db
+    volumes: 
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: magento
+      MYSQL_USER: magento
+      MYSQL_PASSWORD: magento@321
+      MYSQL_ROOT_PASSWORD: magento@321
+    ports: 
+      - 3306:3306
+    networks:
+      - m_net
+  elastic:
+    container_name: m_elastic
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.1
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - node.name=elastic
+      - cluster.name=elastic
+      - cluster.initial_master_nodes=elastic
+    networks:
+      - m_net
+  # redis:
+  #   container_name: m_redis
+  #   image: redis
+  #   command: redis-server
+  #   networks:
+  #     - m_net
+networks:
+  m_net:
+    driver: bridge
